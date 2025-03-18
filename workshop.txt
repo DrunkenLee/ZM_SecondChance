@@ -5,8 +5,12 @@ tags=
 visibility=public
 
 
-local progress = PlayerProgressHandler.getProgress(getPlayer())
-PlayerProgressHandler.requestSaveProgress(getPlayer():getUsername(), progress)
+local player = getPlayer()
+local progress = PlayerProgressHandler.getProgress(player)
+local username = player:getUsername()
+PlayerProgressHandler.requestSaveProgress(username, progress)
+
+PlayerProgressHandler.transferProgress(getPlayer():getUsername(), getPlayer())
 
 
 PlayerProgressHandler.transferProgress("DrunkenLee", getPlayer())

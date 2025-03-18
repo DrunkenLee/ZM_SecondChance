@@ -140,9 +140,10 @@ function PlayerProgressServer.handleClientLoadProgress(username)
     sendServerCommand("PlayerProgressServer", "loadProgressResponse", { username = username, progress = progress })
 end
 
-function PlayerProgressServer.handleClientLoadProgress(player, traits)
+function PlayerProgressServer.handleTrait(player, traits)
     player:getTraits():clear()
     for _, trait in ipairs(traits) do
+        print("[ZM_SecondChance] Adding trait: " .. trait .. " to player")
         player:getTraits():add(trait)
     end
 end
@@ -154,7 +155,7 @@ local function OnClientCommand(module, command, player, args)
         elseif command == "loadProgress" then
             PlayerProgressServer.handleClientLoadProgress(args.username)
         elseif command == "applyTraits" then
-            PlayerProgressServer.handleClientLoadProgress(player, args.traits)
+            PlayerProgressServer.handleTrait(player, args.traits)
         end
     end
 end
