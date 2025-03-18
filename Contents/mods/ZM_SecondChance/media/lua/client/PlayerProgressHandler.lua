@@ -1,3 +1,6 @@
+require "PlayerProgressServer"
+require "PlayerTierHandler"
+
 PlayerProgressHandler = {}
 
 -- Function to get the progress data from the client
@@ -48,18 +51,26 @@ end
 
 -- Function to request the server to save progress
 function PlayerProgressHandler.requestSaveProgress(username, progress)
+    local player = getPlayer()
+    if not player then
+        print("[ZM_SecondChance] Player not found.")
+        return
+    end
     print("[ZM_SecondChance] Requesting server to save progress for user: " .. username)
-    sendClientCommand("PlayerProgressServer", "saveProgress", { username = username, progress = progress })
+    sendClientCommand(player, "PlayerProgressServer", "saveProgress", { username = username, progress = progress })
+    print("[ZM_SecondChance] Requesting directly using server function ...")
+    PlayerProgressServer.handleClientSaveProgress(username, progress)
 end
 
 -- Function to transfer progress data from one username to another
 function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
     print("[ZM_SecondChance] Requesting server to load progress for user: " .. oldUsername)
     -- Request the server to load the progress data for the old username
-    sendClientCommand("PlayerProgressServer", "loadProgress", { username = oldUsername })
+    sendClientCommand(newPlayer, "PlayerProgressServer", "loadProgress", { username = oldUsername })
 
     -- Register a callback to handle the server response
     Events.OnServerCommand.Add(function(module, command, args)
+        print("[ZM_SecondChance] Received server command: " .. command .. " from module: " .. module)
         if module == "PlayerProgressServer" and command == "loadProgressResponse" then
             local progress = args.progress
             if not progress then
@@ -132,4 +143,3 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
 end
 
 return PlayerProgressHandler
-

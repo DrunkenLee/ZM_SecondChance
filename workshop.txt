@@ -3,3 +3,10 @@ title=ZM_SecondChance
 description=Another Zona Merah Project core mods
 tags=
 visibility=public
+
+
+local progress = PlayerProgressHandler.getProgress(getPlayer())
+PlayerProgressHandler.requestSaveProgress(getPlayer():getUsername(), progress)
+
+
+PlayerProgressHandler.transferProgress("DrunkenLee", getPlayer())
