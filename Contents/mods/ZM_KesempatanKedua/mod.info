@@ -1,4 +1,5 @@
 name=ZM_KesempatanKedua
-id=
-description=
 poster=poster.png
+id=ZM_KesempatanKedua
+require=ZonaMerahCore
+description=Another Zona Merah Core Mods
