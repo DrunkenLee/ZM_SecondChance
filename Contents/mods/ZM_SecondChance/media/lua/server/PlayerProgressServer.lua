@@ -142,7 +142,7 @@ end
 
 function PlayerProgressServer.handleTrait(player, traits)
     player:getTraits():clear()
-    for _, trait in ipairs(traits) do
+    for _, trait in pairs(traits) do
         print("[ZM_SecondChance] Adding trait: " .. trait .. " to player")
         player:getTraits():add(trait)
     end

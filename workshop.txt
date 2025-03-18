@@ -1,5 +1,5 @@
 version=1
-title=ZM_SecondChance
+title=ZM_KesempatanKedua
 description=Another Zona Merah Project core mods
 tags=
 visibility=public

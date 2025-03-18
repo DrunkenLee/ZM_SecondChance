@@ -1,6 +1,6 @@
 VERSION = 1,
 
-option ZM_SecondChance.optionA
+option ZM_KesempatanKedua.option
 {
     type = string,
     default = Second Chance,

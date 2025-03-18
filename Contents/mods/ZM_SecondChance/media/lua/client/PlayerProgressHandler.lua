@@ -58,8 +58,8 @@ function PlayerProgressHandler.requestSaveProgress(username, progress)
         print("[ZM_SecondChance] Player not found.")
         return
     end
-    print("[ZM_SecondChance] Requesting server to save progress for user: " .. username)
-    sendClientCommand(player, "PlayerProgressServer", "saveProgress", { username = username, progress = progress })
+    -- print("[ZM_SecondChance] Requesting server to save progress for user: " .. username)
+    -- sendClientCommand(player, "PlayerProgressServer", "saveProgress", { username = username, progress = progress })
     print("[ZM_SecondChance] Requesting directly using server function ...")
     PlayerProgressServer.handleClientSaveProgress(username, progress)
 end
