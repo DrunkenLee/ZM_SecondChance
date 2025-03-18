@@ -23,15 +23,41 @@ end
 local function deserializeTable(str)
     local function deserialize(str)
         local result = {}
-        for pair in string.gmatch(str, "([^;]+)") do
-            local key, value = pair:match("([^=]+)=([^=]+)")
-            if key and value then
-                if value:sub(1, 1) == "{" and value:sub(-1) == "}" then
-                    result[key] = deserialize(value:sub(2, -2))
-                else
-                    result[key] = value
+        local key, value
+        local i = 1
+        while i <= #str do
+            local char = str:sub(i, i)
+            if char == "=" then
+                key = str:sub(1, i - 1)
+                str = str:sub(i + 1)
+                i = 1
+            elseif char == "{" then
+                local count = 1
+                local j = i + 1
+                while count > 0 do
+                    local c = str:sub(j, j)
+                    if c == "{" then count = count + 1 end
+                    if c == "}" then count = count - 1 end
+                    j = j + 1
                 end
+                value = deserialize(str:sub(i + 1, j - 2))
+                str = str:sub(j)
+                i = 1
+            elseif char == ";" then
+                if not value then
+                    value = str:sub(1, i - 1)
+                end
+                result[key] = value
+                str = str:sub(i + 1)
+                key, value = nil, nil
+                i = 1
+            else
+                i = i + 1
             end
+        end
+        if key and not value then
+            value = str
+            result[key] = value
         end
         return result
     end
@@ -114,13 +140,21 @@ function PlayerProgressServer.handleClientLoadProgress(username)
     sendServerCommand("PlayerProgressServer", "loadProgressResponse", { username = username, progress = progress })
 end
 
+function PlayerProgressServer.handleClientLoadProgress(player, traits)
+    player:getTraits():clear()
+    for _, trait in ipairs(traits) do
+        player:getTraits():add(trait)
+    end
+end
+
 local function OnClientCommand(module, command, player, args)
-    print("[ZM_SecondChance] Received client command: " .. command .. " from module: " .. module)
     if module == "PlayerProgressServer" then
         if command == "saveProgress" then
             PlayerProgressServer.handleClientSaveProgress(args.username, args.progress)
         elseif command == "loadProgress" then
             PlayerProgressServer.handleClientLoadProgress(args.username)
+        elseif command == "applyTraits" then
+            PlayerProgressServer.handleClientLoadProgress(player, args.traits)
         end
     end
 end
