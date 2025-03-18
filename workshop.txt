@@ -1,13 +1,6 @@
 version=1
+id=3447025852
 title=ZM_KesempatanKedua
 description=Another Zona Merah Project core mods
 tags=
 visibility=public
-
-
-local player = getPlayer()
-local progress = PlayerProgressHandler.getProgress(player)
-local username = player:getUsername()
-PlayerProgressHandler.requestSaveProgress(username, progress)
-PlayerProgressHandler.transferProgress(getPlayer():getUsername(), getPlayer())
-PlayerProgressHandler.transferProgress("DrunkenLee", getPlayer())

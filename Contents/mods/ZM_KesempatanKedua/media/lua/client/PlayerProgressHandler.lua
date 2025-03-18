@@ -53,15 +53,29 @@ end
 
 -- Function to request the server to save progress
 function PlayerProgressHandler.requestSaveProgress(username, progress)
-    local player = getPlayer()
-    if not player then
-        print("[ZM_SecondChance] Player not found.")
-        return
-    end
-    -- print("[ZM_SecondChance] Requesting server to save progress for user: " .. username)
-    -- sendClientCommand(player, "PlayerProgressServer", "saveProgress", { username = username, progress = progress })
-    print("[ZM_SecondChance] Requesting directly using server function ...")
-    PlayerProgressServer.handleClientSaveProgress(username, progress)
+  local player = getPlayer()
+  if not player then
+      print("[ZM_SecondChance] Player not found.")
+      return
+  end
+
+  -- Define a temporary listener for the server response
+  local function onServerCommand(module, command, args)
+      if module == "PlayerProgressServer" and command == "saveProgressResponse" then
+          if args.username == username then
+              print("[ZM_SecondChance] Received saveProgressResponse for user: " .. args.username)
+              print("Progress: " .. tostring(args.progress))
+              player:Say("Progress saved successfully!")
+              -- Remove the listener after handling the response
+              Events.OnServerCommand.Remove(onServerCommand)
+          end
+      end
+  end
+  Events.OnServerCommand.Add(onServerCommand)
+
+  -- Send the save progress request to the server
+  sendClientCommand(player, "PlayerProgressServer", "saveProgress", { username = username, progress = progress })
+  print("[ZM_SecondChance] Save progress request sent to server for user: " .. username)
 end
 
 -- Function to transfer progress data from one username to another
@@ -70,12 +84,14 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
   -- Request the server to load the progress data for the old username
   sendClientCommand(newPlayer, "PlayerProgressServer", "loadProgress", { username = oldUsername })
 
-  -- Register a callback to handle the server response
-  Events.OnServerCommand.Add(function(module, command, args)
+  -- Define the listener function
+  local function onServerCommand(module, command, args)
       if module == "PlayerProgressServer" and command == "loadProgressResponse" then
           local progress = args.progress
           if not progress then
               print("[ZM_SecondChance] No progress data found for user: " .. oldUsername)
+              -- Remove the listener after handling the response
+              Events.OnServerCommand.Remove(onServerCommand)
               return
           end
 
@@ -138,12 +154,6 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
               recipes:add(recipe)
           end
 
-          -- DO NOT Transfer mod data
-          -- local modData = newPlayer:getModData()
-          -- for key, val in pairs(progress.ModData) do
-          --     modData[key] = val
-          -- end
-
           -- Transfer weight
           local numWeight = tonumber(progress.Weight)
           newPlayer:getNutrition():setWeight(numWeight)
@@ -152,8 +162,14 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
           PlayerTierHandler.reassignRecordedTier(newPlayer)
           newPlayer:Say("My Soul has returned to this body.")
           print("[ZM_SecondChance] Progress successfully transferred from " .. oldUsername .. " to new player.")
+
+          -- Remove the listener after handling the response
+          Events.OnServerCommand.Remove(onServerCommand)
       end
-  end)
+  end
+
+  -- Add the listener for OnServerCommand
+  Events.OnServerCommand.Add(onServerCommand)
 end
 
 return PlayerProgressHandler

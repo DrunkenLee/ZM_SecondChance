@@ -4,19 +4,28 @@ local progressInMemory = {}
 
 -- Function to serialize a table to a string
 local function serializeTable(tbl)
-    local function serialize(tbl, result)
-        for k, v in pairs(tbl) do
-            if type(v) == "table" then
-                result[#result + 1] = k .. "={" .. serializeTable(v) .. "}"
-            else
-                result[#result + 1] = k .. "=" .. tostring(v)
-            end
-        end
-    end
+  local function serialize(tbl, result)
+      for k, v in pairs(tbl) do
+          if type(k) ~= "string" and type(k) ~= "number" then
+              error("Invalid key type in table: " .. tostring(k))
+          end
+          if type(v) == "table" then
+              result[#result + 1] = tostring(k) .. "={" .. serializeTable(v) .. "}"
+          elseif type(v) == "string" or type(v) == "number" or type(v) == "boolean" then
+              result[#result + 1] = tostring(k) .. "=" .. tostring(v)
+          else
+              error("Unsupported value type in table: " .. tostring(v))
+          end
+      end
+  end
 
-    local result = {}
-    serialize(tbl, result)
-    return table.concat(result, ";")
+  if type(tbl) ~= "table" then
+      error("Expected a table for serialization, got: " .. type(tbl))
+  end
+
+  local result = {}
+  serialize(tbl, result)
+  return table.concat(result, ";")
 end
 
 -- Function to deserialize a string to a table
@@ -132,6 +141,8 @@ function PlayerProgressServer.handleClientSaveProgress(username, progress)
     print("[ZM_SecondChance] Handling save progress for user: " .. username)
     progressInMemory[username] = progress
     PlayerProgressServer.saveProgressToFile(username, progress)
+    print("[ZM_SecondChance] Args sent: " .. tostring(username) .. ", Progress: " .. tostring(progress))
+    sendServerCommand("PlayerProgressServer", "saveProgressResponse", { username = username, progress = progress })
 end
 
 function PlayerProgressServer.handleClientLoadProgress(username)
@@ -149,16 +160,25 @@ function PlayerProgressServer.handleTrait(player, traits)
 end
 
 local function OnClientCommand(module, command, player, args)
-    if module == "PlayerProgressServer" then
-        if command == "saveProgress" then
-            PlayerProgressServer.handleClientSaveProgress(args.username, args.progress)
-        elseif command == "loadProgress" then
-            PlayerProgressServer.handleClientLoadProgress(args.username)
-        elseif command == "applyTraits" then
-            PlayerProgressServer.handleTrait(player, args.traits)
-        end
-    end
+  print("[ZM_SecondChance] Received command: " .. tostring(command) .. " in module: " .. tostring(module))
+  if module == "PlayerProgressServer" then
+      if command == "saveProgress" then
+          print("[ZM_SecondChance] Executing saveProgress for user: " .. tostring(args.username))
+          PlayerProgressServer.handleClientSaveProgress(args.username, args.progress)
+      elseif command == "loadProgress" then
+          print("[ZM_SecondChance] Executing loadProgress for user: " .. tostring(args.username))
+          PlayerProgressServer.handleClientLoadProgress(args.username)
+      elseif command == "applyTraits" then
+          print("[ZM_SecondChance] Executing applyTraits for player.")
+          PlayerProgressServer.handleTrait(player, args.traits)
+      elseif command == "testcoba" then
+          print("[ZM_SecondChance] Test command received. Args: " .. tostring(args.testKey))
+      else
+          print("[ZM_SecondChance] Unknown command: " .. tostring(command))
+      end
+  end
 end
+
 
 Events.OnClientCommand.Add(OnClientCommand)
 
