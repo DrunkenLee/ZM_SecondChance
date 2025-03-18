@@ -1,0 +1,8 @@
+VERSION = 1,
+
+option ZM_SecondChance.optionA
+{
+    type = string,
+    default = Second Chance,
+    page = SecondChance
+}
