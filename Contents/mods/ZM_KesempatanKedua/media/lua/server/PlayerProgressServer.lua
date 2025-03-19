@@ -160,7 +160,6 @@ function PlayerProgressServer.handleTrait(player, traits)
 end
 
 local function OnClientCommand(module, command, player, args)
-  print("[ZM_SecondChance] Received command: " .. tostring(command) .. " in module: " .. tostring(module))
   if module == "PlayerProgressServer" then
       if command == "saveProgress" then
           print("[ZM_SecondChance] Executing saveProgress for user: " .. tostring(args.username))
