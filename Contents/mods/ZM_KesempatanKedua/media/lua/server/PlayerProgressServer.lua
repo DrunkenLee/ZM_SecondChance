@@ -1,6 +1,7 @@
 PlayerProgressServer = {}
 local progressFilePath = "server-player-progress.ini"
 local progressInMemory = {}
+local activeTransfers = {}
 
 -- Function to serialize a table to a string
 local function serializeTable(tbl)
@@ -137,6 +138,78 @@ function PlayerProgressServer.loadProgressFromFile(username)
     return progress
 end
 
+-- Handle metadata for a new chunked transfer
+function PlayerProgressServer.handleSaveProgressMetadata(username, transferId, metadata, totalChunks)
+    print("[ZM_SecondChance] Starting new chunked transfer: " .. transferId .. " for user: " .. username)
+
+    activeTransfers[transferId] = {
+        username = username,
+        progress = {
+            Traits = {},
+            Perks = {},
+            Boosts = {},
+            Recipes = {},
+            ModData = {},
+            Weight = metadata.weight or 0
+        },
+        receivedChunks = 0,
+        totalChunks = totalChunks
+    }
+
+    return true
+end
+
+-- Handle an individual chunk for a transfer
+function PlayerProgressServer.handleSaveProgressChunk(transferId, username, chunkType, data, chunkIndex, totalTypeChunks, chunkNum)
+    print("[ZM_SecondChance] Processing chunk type: " .. chunkType .. " for transfer: " .. transferId)
+
+    local transfer = activeTransfers[transferId]
+    if not transfer then
+        print("[ZM_SecondChance] ERROR: No active transfer found with ID: " .. transferId)
+        return false
+    end
+
+    -- Process chunk based on type
+    if chunkType == "traits" then
+        transfer.progress.Traits = data
+    elseif chunkType == "recipes" then
+        transfer.progress.Recipes = data
+    elseif chunkType == "perks" then
+        -- For perks, merge chunks
+        for k, v in pairs(data) do
+            transfer.progress.Perks[k] = v
+        end
+    elseif chunkType == "boosts" then
+        transfer.progress.Boosts = data
+    elseif chunkType == "modData" then
+        -- For modData, merge chunks
+        for k, v in pairs(data) do
+            transfer.progress.ModData[k] = v
+        end
+    end
+
+    -- Track received chunks
+    transfer.receivedChunks = transfer.receivedChunks + 1
+
+    -- Send a response for this chunk
+    sendServerCommand("PlayerProgressServer", "saveProgressChunkResponse", {
+        transferId = transferId,
+        username = username,
+        chunkType = chunkType,
+        chunkNum = chunkNum
+    })
+
+    -- If all chunks received, save the progress and clean up
+    if transfer.receivedChunks >= transfer.totalChunks then
+        print("[ZM_SecondChance] All " .. transfer.receivedChunks .. " chunks received for transfer: " .. transferId)
+        progressInMemory[username] = transfer.progress
+        PlayerProgressServer.saveProgressToFile(username, transfer.progress)
+        activeTransfers[transferId] = nil
+    end
+
+    return true
+end
+
 function PlayerProgressServer.handleClientSaveProgress(username, progress)
     print("[ZM_SecondChance] Handling save progress for user: " .. username)
     progressInMemory[username] = progress
@@ -161,7 +234,13 @@ end
 
 local function OnClientCommand(module, command, player, args)
   if module == "PlayerProgressServer" then
-      if command == "saveProgress" then
+      if command == "saveProgressMetadata" then
+          print("[ZM_SecondChance] Executing saveProgressMetadata for user: " .. tostring(args.username))
+          PlayerProgressServer.handleSaveProgressMetadata(args.username, args.transferId, args.metadata, args.totalChunks)
+      elseif command == "saveProgressChunk" then
+          print("[ZM_SecondChance] Executing saveProgressChunk for transfer: " .. tostring(args.transferId))
+          PlayerProgressServer.handleSaveProgressChunk(args.transferId, args.username, args.chunkType, args.data, args.chunkIndex, args.totalTypeChunks, args.chunkNum)
+      elseif command == "saveProgress" then
           print("[ZM_SecondChance] Executing saveProgress for user: " .. tostring(args.username))
           PlayerProgressServer.handleClientSaveProgress(args.username, args.progress)
       elseif command == "loadProgress" then
@@ -177,7 +256,6 @@ local function OnClientCommand(module, command, player, args)
       end
   end
 end
-
 
 Events.OnClientCommand.Add(OnClientCommand)
 

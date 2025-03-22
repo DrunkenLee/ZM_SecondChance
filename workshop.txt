@@ -1,6 +1,6 @@
 version=1
-id=3447025852
-title=ZM_KesempatanKedua
+id=
+title=ZM_KesempatanKedua_dev
 description=Another Zona Merah Project core mods
 tags=
 visibility=public
