@@ -1,54 +1,83 @@
 require "PlayerProgressServer"
 require "PlayerTierHandler"
-require "ServerPointsShared"
 
 
 PlayerProgressHandler = {}
 
 -- Function to get the progress data from the client
 function PlayerProgressHandler.getProgress(player)
-    local progress = {
-        Traits = {},
-        Perks = {},
-        Boosts = {},
-        Recipes = {},
-        ModData = {},
-        Weight = player:getNutrition():getWeight()
-    }
+  local progress = {
+      Traits = {},
+      Perks = {},
+      Boosts = {},
+      Recipes = {},
+      ModData = {},
+      Weight = player:getNutrition():getWeight()
+  }
 
-    -- Get traits
-    local traits = player:getTraits()
-    for i = 0, traits:size() - 1 do
-        table.insert(progress.Traits, traits:get(i))
-    end
+  -- Get traits
+  local traits = player:getTraits()
+  for i = 0, traits:size() - 1 do
+      table.insert(progress.Traits, traits:get(i))
+  end
 
-    -- Get XP and perks
-    local playerXp = player:getXp()
-    for i = 0, PerkFactory.PerkList:size() - 1 do
-        local perk = PerkFactory.PerkList:get(i)
-        local perkName = perk:getName()
-        local xp = playerXp:getXP(perk)
-        progress.Perks[perkName] = xp
-        local boost = playerXp:getPerkBoost(perk)
-        if boost > 0 then
-            progress.Boosts[perkName] = boost
-        end
-    end
+  -- Get XP and perks
+  local playerXp = player:getXp()
+  for i = 0, PerkFactory.PerkList:size() - 1 do
+      local perk = PerkFactory.PerkList:get(i)
+      local perkName = perk:getName()
+      local xp = playerXp:getXP(perk)
+      progress.Perks[perkName] = xp
+      local boost = playerXp:getPerkBoost(perk)
+      if boost > 0 then
+          progress.Boosts[perkName] = boost
+      end
+  end
 
-    -- Get known recipes
-    local recipes = player:getKnownRecipes()
-    for i = 0, recipes:size() - 1 do
-        table.insert(progress.Recipes, recipes:get(i))
-    end
+  -- Get known recipes
+  local recipes = player:getKnownRecipes()
+  for i = 0, recipes:size() - 1 do
+      table.insert(progress.Recipes, recipes:get(i))
+  end
 
-    -- Get mod data
-    local modData = player:getModData()
-    for key, val in pairs(modData) do
-        progress.ModData[key] = val
-    end
+  -- Get mod data
+  local modData = player:getModData()
 
-    print("[ZM_SecondChance] Progress data collected for player: " .. player:getUsername())
-    return progress
+  -- Define allowed ModData keys based on the example
+  local allowedModDataKeys = {
+      "TrueMusicJukebox", "hotbar", "CHC_item_favorites", "tad",
+      "Moodles", "PlayerTier", "PlayerTierValue", "ispwn",
+      "SRJPassiveSkillsInit", "BrutalHandwork", "TimeSprite",
+      "ProjectileTimer", "ProjectileHit", "Reducer", "LastBD"
+  }
+
+  -- Filter ModData to only include the allowed keys
+  for _, key in ipairs(allowedModDataKeys) do
+      if modData[key] then
+          progress.ModData[key] = modData[key]
+      end
+  end
+
+  -- Filter LastBD to only include specified body parts
+  if progress.ModData.LastBD then
+      local allowedBodyParts = {
+          "Hand_L", "Hand_R", "ForeArm_L", "ForeArm_R", "UpperArm_L", "UpperArm_R",
+          "Torso_Upper", "Torso_Lower", "Head", "Neck", "Groin",
+          "UpperLeg_L", "UpperLeg_R", "LowerLeg_L", "LowerLeg_R", "Foot_L", "Foot_R"
+      }
+
+      local filteredLastBD = {}
+      for _, part in ipairs(allowedBodyParts) do
+          if progress.ModData.LastBD[part] then
+              filteredLastBD[part] = progress.ModData.LastBD[part]
+          end
+      end
+
+      progress.ModData.LastBD = filteredLastBD
+  end
+
+  print("[ZM_SecondChance] Progress data collected for player: " .. player:getUsername())
+  return progress
 end
 
 -- Function to request the server to save progress
