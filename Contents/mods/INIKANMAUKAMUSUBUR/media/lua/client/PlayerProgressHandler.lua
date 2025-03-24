@@ -1,12 +1,11 @@
 require "PlayerProgressServer"
 require "PlayerTierHandler"
-require "ServerPointsShared"
 
 
-PlayerProgressHandler = {}
+PlayerProgressHandler = PlayerProgressHandler or {}
 
 -- Function to get the progress data from the client
-function PlayerProgressHandler.getProgress(player)
+function PlayerProgressHandler.getProgressLah(player)
     local progress = {
         Traits = {},
         Perks = {},
@@ -43,11 +42,8 @@ function PlayerProgressHandler.getProgress(player)
 
     -- Get mod data
     local modData = player:getModData()
-    for key, val in pairs(modData) do
-        progress.ModData[key] = val
-    end
+    progress.ModData = modData
 
-    print("[ZM_SecondChance] Progress data collected for player: " .. player:getUsername())
     return progress
 end
 
@@ -173,4 +169,3 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
 end
 
 return PlayerProgressHandler
-
