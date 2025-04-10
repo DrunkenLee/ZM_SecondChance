@@ -34,14 +34,14 @@ function PlayerProgressHandler.getProgressLah(player)
         end
     end
 
-    -- Get known recipes
-    local recipes = player:getKnownRecipes()
-    for i = 0, recipes:size() - 1 do
-        table.insert(progress.Recipes, recipes:get(i))
-    end
+    -- -- Get known recipes
+    -- local recipes = player:getKnownRecipes()
+    -- for i = 0, recipes:size() - 1 do
+    --     table.insert(progress.Recipes, recipes:get(i))
+    -- end
 
     -- Get mod data
-    local modData = player:getModData()
+    -- local modData = player:getModData()
     progress.ModData = modData
 
     return progress
@@ -60,7 +60,7 @@ function PlayerProgressHandler.requestSaveProgress(username, progress)
       if module == "PlayerProgressServer" and command == "saveProgressResponse" then
           if args.username == username then
               print("[ZM_SecondChance] Received saveProgressResponse for user: " .. args.username)
-              print("Progress: " .. tostring(args.progress))
+              -- Don't print the entire progress object - it's too large
               player:Say("Progress saved successfully!")
               -- Remove the listener after handling the response
               Events.OnServerCommand.Remove(onServerCommand)
@@ -144,11 +144,11 @@ function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
               end
           end
 
-          -- Transfer known recipes
-          local recipes = newPlayer:getKnownRecipes()
-          for _, recipe in ipairs(progress.Recipes) do
-              recipes:add(recipe)
-          end
+          -- -- Transfer known recipes
+          -- local recipes = newPlayer:getKnownRecipes()
+          -- for _, recipe in ipairs(progress.Recipes) do
+          --     recipes:add(recipe)
+          -- end
 
           -- Transfer weight
           local numWeight = tonumber(progress.Weight)
