@@ -298,7 +298,7 @@ local function OnKeyPressed(key)
     end
 end
 
-Events.OnKeyPressed.Add(OnKeyPressed)
+-- Events.OnKeyPressed.Add(OnKeyPressed)
 
 -- Global function for easy access from console
 function ShowPerkProgress()
