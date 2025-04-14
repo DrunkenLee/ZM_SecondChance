@@ -1,5 +1,5 @@
 PlayerProgressServer = {}
-local progressFilePath = "server-player-progress.ini"
+local progressFilePath = "playerprogress" -- Base directory without slash
 local progressInMemory = {}
 
 -- Function to serialize a table to a string
@@ -74,74 +74,76 @@ local function deserializeTable(str)
     return deserialize(str)
 end
 
--- Function to save the player's progress to a file
+-- Modified function to save the player's progress to a separate file
 function PlayerProgressServer.saveProgressToFile(username, progress)
-    local data = {}
-    print("[ZM_SecondChance] Saving progress for user: " .. username)
+    -- Sanitize username for safe file operations
+    local sanitizedUsername = string.gsub(username, "[^%w_-]", "_")
+    local userFilePath = progressFilePath .. "_" .. sanitizedUsername .. ".ini"
 
-    local file = getFileReader(progressFilePath, true)
-    if file then
-        local line = file:readLine()
-        while line do
-            local user, traits = line:match("([^,]+),(.+)")
-            if user and traits then
-                data[user] = traits
-            end
-            line = file:readLine()
-        end
-        file:close()
-    end
+    print("[ZM_SecondChance] Saving progress for user: " .. username .. " to file: " .. userFilePath)
 
-    data[username] = serializeTable(progress) -- Serialize the progress table
-
-    local fileWriter = getFileWriter(progressFilePath, true, false)
+    -- Serialize and save directly to the user-specific file
+    local fileWriter = getFileWriter(userFilePath, true, false)
     if fileWriter then
-        for user, traits in pairs(data) do
-            fileWriter:write(string.format("%s,%s\n", user, traits))
-        end
+        local serializedData = serializeTable(progress) -- Serialize the progress table
+        fileWriter:write(serializedData)
         fileWriter:close()
-        data[username] = nil
+        print("[ZM_SecondChance] Successfully saved progress for user: " .. username)
+        return true
     else
-        error("Failed to open file for writing: " .. progressFilePath)
+        print("[ZM_SecondChance] ERROR: Failed to open file for writing: " .. userFilePath)
+        return false
     end
 end
 
-function PlayerProgressServer.saveAllProgressToFile()
-    for username, progress in pairs(progressInMemory) do
-        PlayerProgressServer.saveProgressToFile(username, progress)
-    end
-    print("[ZM_SecondChance] All in-memory progress have been saved to the file.")
-end
-
+-- Modified function to load progress from a separate file
 function PlayerProgressServer.loadProgressFromFile(username)
-    print("[ZM_SecondChance] Loading progress for user: " .. username)
-    local file = getFileReader(progressFilePath, true)
+    -- Sanitize username for safe file operations
+    local sanitizedUsername = string.gsub(username, "[^%w_-]", "_")
+    local userFilePath = progressFilePath .. "_" .. sanitizedUsername .. ".ini"
+
+    print("[ZM_SecondChance] Loading progress for user: " .. username .. " from file: " .. userFilePath)
+
+    local file = getFileReader(userFilePath, true)
     if not file then
-        print("[ZM_SecondChance] File not found: " .. progressFilePath)
+        print("[ZM_SecondChance] File not found: " .. userFilePath)
         return nil
     end
 
-    local data = {}
+    -- Read the entire file content
+    local content = ""
     local line = file:readLine()
     while line do
-        local user, traits = line:match("([^,]+),(.+)")
-        if user and traits then
-            data[user] = deserializeTable(traits) -- Deserialize the progress string
-        end
+        content = content .. line
         line = file:readLine()
     end
     file:close()
 
-    local progress = data[username]
-    print("[ZM_SecondChance] Progress for user " .. username .. ": " .. tostring(progress))
+    -- Deserialize the content
+    local progress = nil
+    if content and content ~= "" then
+        progress = deserializeTable(content)
+        print("[ZM_SecondChance] Progress loaded successfully for user: " .. username)
+    else
+        print("[ZM_SecondChance] Empty content in file: " .. userFilePath)
+    end
+
     return progress
+end
+
+-- Modified function to save all progress to files (saves each user to their own file)
+function PlayerProgressServer.saveAllProgressToFile()
+    for username, progress in pairs(progressInMemory) do
+        PlayerProgressServer.saveProgressToFile(username, progress)
+    end
+    print("[ZM_SecondChance] All in-memory progress have been saved to individual files.")
 end
 
 function PlayerProgressServer.handleClientSaveProgress(username, progress)
     print("[ZM_SecondChance] Handling save progress for user: " .. username)
     progressInMemory[username] = progress
-    PlayerProgressServer.saveProgressToFile(username, progress)
-    print("[ZM_SecondChance] Args sent: " .. tostring(username) .. ", Progress: " .. tostring(progress))
+    local success = PlayerProgressServer.saveProgressToFile(username, progress)
+    print("[ZM_SecondChance] Save success: " .. tostring(success) .. " for user: " .. tostring(username))
     sendServerCommand("PlayerProgressServer", "saveProgressResponse", { username = username, progress = progress })
 end
 
@@ -177,7 +179,6 @@ local function OnClientCommand(module, command, player, args)
       end
   end
 end
-
 
 Events.OnClientCommand.Add(OnClientCommand)
 
