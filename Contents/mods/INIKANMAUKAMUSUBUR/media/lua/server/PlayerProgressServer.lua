@@ -1,5 +1,5 @@
 PlayerProgressServer = {}
-local progressFilePath = "playerprogress" -- Base directory without slash
+local progressFilePath = "playerprogress/" -- Base directory without slash
 local progressInMemory = {}
 
 -- Function to serialize a table to a string
@@ -148,12 +148,17 @@ function PlayerProgressServer.handleClientSaveProgress(username, progress)
 end
 
 function PlayerProgressServer.handleClientLoadProgress(username)
+    print("[DEBUG] Looking for progress file for: " .. username)
+    print("[DEBUG] Checking path: " .. progressFilePath .. username .. ".ini")
+    print("[DEBUG] Also checking: Lua/playerprogress_" .. username .. ".ini")
     print("[ZM_SecondChance] Handling load progress for user: " .. username)
     local progress = PlayerProgressServer.loadProgressFromFile(username)
     sendServerCommand("PlayerProgressServer", "loadProgressResponse", { username = username, progress = progress })
 end
 
 function PlayerProgressServer.handleTrait(player, traits)
+    print("[ZM_SecondChance] Handling trait application for player: " .. player:getUsername())
+    -- print("[ZM_SecondChance] Applying traits: " .. table.concat(traits, ", "))
     player:getTraits():clear()
     for _, trait in pairs(traits) do
         print("[ZM_SecondChance] Adding trait: " .. trait .. " to player")
