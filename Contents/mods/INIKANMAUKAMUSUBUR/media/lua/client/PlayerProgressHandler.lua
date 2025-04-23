@@ -3,6 +3,9 @@ require "PlayerTierHandler"
 
 PlayerProgressHandler = PlayerProgressHandler or {}
 
+local function sanitizeUsername(username)
+  return string.gsub(username, "[^%w_-]", "_")
+end
 -- Function to get the progress data from the client
 function PlayerProgressHandler.getProgressLah(player)
     local progress = {
@@ -51,7 +54,7 @@ function PlayerProgressHandler.requestSaveProgress(username, progress)
     end
 
     -- Sanitize username to match server-side sanitization
-    local sanitizedUsername = string.gsub(username, "[^%w_-]", "_")
+    local sanitizedUsername = sanitizeUsername(username)
     if sanitizedUsername ~= username then
         print("[ZM_SecondChance] Username was sanitized: " .. username .. " -> " .. sanitizedUsername)
         username = sanitizedUsername
@@ -76,9 +79,10 @@ function PlayerProgressHandler.requestSaveProgress(username, progress)
 end
 
 -- Function to transfer progress data from one username to another
+
 function PlayerProgressHandler.transferProgress(oldUsername, newPlayer)
     -- Sanitize username to match server-side sanitization
-    local sanitizedUsername = string.gsub(oldUsername, "[^%w_-]", "_")
+    local sanitizedUsername = sanitizeUsername(oldUsername)
     if sanitizedUsername ~= oldUsername then
         print("[ZM_SecondChance] Username was sanitized: " .. oldUsername .. " -> " .. sanitizedUsername)
         oldUsername = sanitizedUsername
@@ -202,7 +206,7 @@ end
 -- Enhanced safe transfer for complex admin data
 function PlayerProgressHandler.enhancedTransferProgress(oldUsername, newPlayer)
     -- Sanitize username
-    local sanitizedUsername = string.gsub(oldUsername, "[^%w_-]", "_")
+    local sanitizedUsername = sanitizeUsername(username)
     oldUsername = sanitizedUsername
 
     print("[ZM_SecondChance] Starting enhanced transfer for: " .. oldUsername)
@@ -384,7 +388,7 @@ function PlayerProgressHandler.ultraSafeTransferProgress(oldUsername, newPlayer)
   local handlerId = "ZM_transferHandler_" .. handlerCounter
 
   -- Sanitize username
-  local sanitizedUsername = string.gsub(oldUsername, "[^%w_-]", "_")
+  local sanitizedUsername = sanitizeUsername(oldUsername)
   oldUsername = sanitizedUsername
 
   print("[ZM_SecondChance] Starting ultra-safe transfer for: " .. oldUsername)
