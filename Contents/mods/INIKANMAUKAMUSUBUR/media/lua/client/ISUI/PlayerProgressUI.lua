@@ -69,11 +69,13 @@ function PerkProgressUI:setupServerListeners()
 
     -- Create a new listener
     self.onServerCommandFunction = function(module, command, args)
-        if module == "PlayerProgressServer" and command == "loadProgressResponse" then
+        if module == "PlayerProgressServer" and command == "loadProgressDisplayOnlyResponse" then
             -- Process the loaded progress data
             if args.progress then
+                print("Received progress data for user: " .. args.username)
                 self:displayProgress(args.progress, args.username)
             else
+                print("No progress data received for user: " .. args.username)
                 self.perkList:clear()
             end
         end
@@ -83,6 +85,7 @@ function PerkProgressUI:setupServerListeners()
 end
 
 function PerkProgressUI:loadFromINI()
+    print("Loading progress from INI file...")
     local player = getPlayer()
     if not player then return end
 
@@ -92,7 +95,7 @@ function PerkProgressUI:loadFromINI()
     end
 
     if username and username ~= "" then
-        sendClientCommand(player, "PlayerProgressServer", "loadProgress", { username = username })
+        sendClientCommand(player, "PlayerProgressServer", "loadProgressDisplayOnly", { username = username })
     else
 
     end

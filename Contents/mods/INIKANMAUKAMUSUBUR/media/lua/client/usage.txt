@@ -1,0 +1,11 @@
+// Save progress
+local progress = PlayerProgressHandler.getProgressLah(getPlayer())
+PlayerProgressHandler.requestSaveProgress("admin", progress)
+// Wait 2 second then showUI
+ShowPerkProgress()
+
+
+// Transfer Progress
+PlayerProgressHandler.ultraSafeTransferProgress("admin", getPlayer())
+// Wait 2 second
+PlayerProgressHandler.completeTraitTransfer("admin", getPlayer())
