@@ -189,22 +189,19 @@ function PlayerProgressServer.archiveProgressFile(username)
     end
 end
 
-function PlayerProgressServer.handleClientLoadProgressXP(username)
+function PlayerProgressServer.handleClientLoadProgressXP(username, requestId)
   print("[DEBUG] Looking for progress file for: " .. username)
-  print("[DEBUG] Checking path: " .. progressFilePath .. username .. ".ini")
-  print("[DEBUG] Also checking: Lua/playerprogress_" .. username .. ".ini")
-  print("[ZM_SecondChance] Handling load progress for user: " .. username)
+  print("[DEBUG] Request ID: " .. tostring(requestId))
 
   -- First load the progress
   local progress = PlayerProgressServer.loadProgressFromFile(username)
 
-  -- Then create a backup before sending response
-  if progress then
-      -- PlayerProgressServer.archiveProgressFile(username)
-  end
-
-  -- Send the progress data to client
-  sendServerCommand("PlayerProgressServer", "loadProgressResponse", { username = username, progress = progress })
+  -- Send the progress data to client WITH the request ID to match the request
+  sendServerCommand("PlayerProgressServer", "loadProgressResponse", {
+      username = username,
+      progress = progress,
+      requestId = requestId  -- Echo back the request ID
+  })
 end
 
 function PlayerProgressServer.handleClientLoadProgress(username)
@@ -240,11 +237,11 @@ local function OnClientCommand(module, command, player, args)
             print("[ZM_SecondChance] Executing saveProgress for user: " .. tostring(args.username))
             PlayerProgressServer.handleClientSaveProgress(args.username, args.progress)
         elseif command == "loadProgressXP" then
-            print("[ZM_SecondChance] Executing loadProgress for user: " .. tostring(args.username))
-            PlayerProgressServer.handleClientLoadProgressXP(args.username)
+            print("[ZM_SecondChance] Executing loadProgress for user: " .. tostring(args.username) .. " with request ID: " .. tostring(args.requestId))
+            PlayerProgressServer.handleClientLoadProgressXP(args.username, args.requestId)
         elseif command == "loadProgressTRAIT" then
-            print("[ZM_SecondChance] Executing loadProgress for user: " .. tostring(args.username))
-            PlayerProgressServer.handleClientLoadProgress(args.username)
+            print("[ZM_SecondChance] Executing loadProgressTRAIT for user: " .. tostring(args.username) .. " with request ID: " .. tostring(args.requestId))
+            PlayerProgressServer.handleClientLoadProgressXP(args.username, args.requestId)
         elseif command == "loadProgressDisplayOnly" then
             print("[ZM_SecondChance] Executing loadProgressDisplayOnly for user: " .. tostring(args.username))
             local progress = PlayerProgressServer.loadProgressFromFile(args.username)

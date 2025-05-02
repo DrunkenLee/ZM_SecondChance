@@ -92,14 +92,24 @@ function PlayerProgressHandler.ultraSafeTransferProgress(oldUsername, newPlayer)
   handlerCounter = handlerCounter + 1
   local handlerId = "ZM_transferHandler_" .. handlerCounter
 
+  -- Generate a unique request ID
+  local requestId = "req_" .. tostring(os.time()) .. "_" .. tostring(handlerCounter)
+
+  print("[ZM_SecondChance] Starting ultra-safe transfer for: " .. oldUsername .. " (RequestID: " .. requestId .. ")")
+
   -- Sanitize username
   local sanitizedUsername = sanitizeUsername(oldUsername)
   oldUsername = sanitizedUsername
 
-  print("[ZM_SecondChance] Starting ultra-safe transfer for: " .. oldUsername)
-
   local traitHandler = function(module, command, args)
-      if module == "PlayerProgressServer" and command == "loadProgressResponse" then
+    -- Debug print for incoming server command
+    print(string.format(
+      "[ZM_SecondChance] ServerCommand: module=%s, command=%s, args.requestId=%s, expectedRequestId=%s, args.username=%s, expectedUsername=%s",
+      tostring(module), tostring(command), tostring(args and args.requestId), tostring(requestId), tostring(args and args.username), tostring(oldUsername)
+    ))
+
+    -- Check if the command matches our request ID and username
+    if module == "PlayerProgressServer" and command == "loadProgressResponse" and args.requestId == requestId and args.username == oldUsername then
           local progress = args.progress
           if not progress then
               print("[ZM_SecondChance] No progress data found for: " .. oldUsername)
@@ -347,7 +357,10 @@ function PlayerProgressHandler.ultraSafeTransferProgress(oldUsername, newPlayer)
   end
   Events.OnServerCommand.Add(traitHandler)
   activeHandlers[handlerId] = traitHandler
-  sendClientCommand(newPlayer, "PlayerProgressServer", "loadProgressXP", { username = oldUsername })
+  sendClientCommand(newPlayer, "PlayerProgressServer", "loadProgressXP", {
+    username = oldUsername,
+    requestId = requestId
+  })
 end
 
 function PlayerProgressHandler.completeTraitTransfer(username, player)
@@ -356,11 +369,22 @@ function PlayerProgressHandler.completeTraitTransfer(username, player)
   handlerCounter = handlerCounter or 0
   handlerCounter = handlerCounter + 1
   local handlerId = "ZM_traitHandler_" .. handlerCounter
+  -- Generate a unique request ID
+  local requestId = "reqTrait_" .. tostring(os.time()) .. "_" .. tostring(handlerCounter)
 
   print("[ZM_SecondChance] Starting trait recovery for: " .. username)
+  -- Sanitize username
+  local sanitizedUsername = sanitizeUsername(username)
+  username = sanitizedUsername
 
   local traitHandler = function(module, command, args)
-      if module == "PlayerProgressServer" and command == "loadProgressResponse" then
+      print(string.format(
+        "[ZM_SecondChance] TraitTransfer ServerCommand: module=%s, command=%s, args.requestId=%s, expectedRequestId=%s, args.username=%s, expectedUsername=%s",
+        tostring(module), tostring(command), tostring(args and args.requestId), tostring(requestId), tostring(args and args.username), tostring(username)
+      ))
+
+      if module == "PlayerProgressServer" and command == "loadProgressResponse" and args.requestId == requestId and args.username == username then
+
           local progress = args.progress
           if not progress then
               print("[ZM_SecondChance] No progress data found")
@@ -425,11 +449,14 @@ function PlayerProgressHandler.completeTraitTransfer(username, player)
   end
 
   -- Register handler
-  activeHandlers[handlerId] = traitHandler
   Events.OnServerCommand.Add(traitHandler)
+  activeHandlers[handlerId] = traitHandler
 
   -- Request progress data
-  sendClientCommand(player, "PlayerProgressServer", "loadProgressTRAIT", { username = username })
+  sendClientCommand(player, "PlayerProgressServer", "loadProgressTRAIT", {
+    username = username,
+    requestId = requestId
+  })
 end
 
 return PlayerProgressHandler
